@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="hi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,6 +45,28 @@
         .header p {
             color: #7f8c8d;
             font-size: 1.1em;
+        }
+
+        .sync-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .sync-status.connected {
+            background: #27ae60;
+        }
+
+        .sync-status.disconnected {
+            background: #e74c3c;
+        }
+
+        .sync-status.syncing {
+            background: #f39c12;
         }
 
         .controls {
@@ -126,13 +149,14 @@
             letter-spacing: 1px;
         }
 
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .btn:active {
-            transform: translateY(0);
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .stats {
@@ -265,6 +289,12 @@
             font-weight: bold;
         }
 
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -276,10 +306,6 @@
 
             .controls {
                 padding: 20px;
-            }
-
-            .add-section {
-                grid-template-columns: 1fr;
             }
 
             .stats {
@@ -294,35 +320,17 @@
                 max-height: 500px;
             }
         }
-
-        @media (max-width: 480px) {
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .controls {
-                padding: 15px;
-            }
-
-            .qa-item {
-                padding: 15px;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1>🕉️ जैन धर्म प्रश्न-उत्तर संग्रह</h1>
             <p>आपका व्यक्तिगत प्रतियोगिता पुस्तकालय</p>
+            <div class="sync-status" id="syncStatus">
+                🔄 कनेक्ट हो रहा है...
+            </div>
         </div>
 
         <div class="stats">
@@ -333,6 +341,10 @@
             <div class="stat-card">
                 <div class="stat-number" id="searchResults">0</div>
                 <div class="stat-label">खोज परिणाम</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="onlineUsers">1</div>
+                <div class="stat-label">ऑनलाइन उपयोगकर्ता</div>
             </div>
         </div>
 
@@ -350,187 +362,311 @@
                     <label for="answerInput">उत्तर:</label>
                     <textarea id="answerInput" placeholder="उत्तर यहाँ लिखें..."></textarea>
                 </div>
-                <button class="btn" onclick="addQuestion()">प्रश्न जोड़ें</button>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                    <button class="btn" onclick="exportData()">डेटा एक्सपोर्ट करें</button>
-                    <button class="btn" onclick="importData()">डेटा इम्पोर्ट करें</button>
-                </div>
+                <button class="btn" id="addBtn" onclick="addQuestion()">प्रश्न जोड़ें</button>
             </div>
         </div>
 
         <div class="qa-container" id="qaContainer">
-            <div class="no-results">
-                कोई प्रश्न उपलब्ध नहीं है। कृपया नए प्रश्न जोड़ें।
+            <div class="loading">
+                🔄 डेटा लोड हो रहा है...
             </div>
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+
     <script>
-        // Store questions in memory
+        // Firebase Configuration (You need to replace with your own config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBV4-9OiFKOw24cTDYqqF6B2p-9uTFAtNs",
+            authDomain: "jain-qa-app.firebaseapp.com",
+            databaseURL: "https://jain-qa-app-default-rtdb.firebaseio.com",
+            projectId: "jain-qa-app",
+            storageBucket: "jain-qa-app.appspot.com", // <-- FIXED
+            messagingSenderId: "275238576627",
+            appId: "1:275238576627:web:88be75c1273233bf4c3286",
+            measurementId: "G-TECJ428SJ7"
+        };
+
+        // Initialize Firebase
+        let database;
+        let questionsRef;
         let questions = [];
         let currentEditIndex = -1;
+        let isConnected = false;
+        let initializationAttempts = 0;
+        let maxInitializationAttempts = 3;
 
-        // Load data from JSON file or localStorage
-        async function loadData() {
+        // Initialize Firebase and Database with retry mechanism
+        function initializeFirebase() {
+            initializationAttempts++;
+
             try {
-                // First try to load from localStorage (browser storage)
-                const localData = localStorage.getItem('jainismQA');
-                if (localData) {
-                    questions = JSON.parse(localData);
-                    console.log('Loaded from localStorage:', questions.length, 'questions');
-                    return;
+                // Check if Firebase is already initialized
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
                 }
-                
-                // If no localStorage, try to load from JSON file
-                const response = await fetch('data/questions.json');
-                if (response.ok) {
-                    const data = await response.json();
-                    questions = data.questions || [];
-                    console.log('Loaded from JSON file:', questions.length, 'questions');
-                    // Save to localStorage for future use
-                    localStorage.setItem('jainismQA', JSON.stringify(questions));
-                } else {
-                    throw new Error('JSON file not found');
-                }
-            } catch (error) {
-                console.log('Using sample data:', error.message);
-                // Fallback to sample data
-                const sampleData = [
-                    {
-                        question: "णमोकार मंत्र को किसने बनाया ?",
-                        answer: "णमोकार मंत्र अनादिनिधन मंत्र है, इसे किसी ने नहीं बनाया है।"
-                    },
-                    {
-                        question: "णमोकार मंत्र में किनको नमस्कार किया गया है ?",
-                        answer: "पाँच परमेष्ठियों-अरिहंत, सिद्ध, आचार्य, उपाध्याय और साधु को नमस्कार किया गया है।"
-                    },
-                    {
-                        question: "उनकी पुत्री ब्राह्मी-सुन्दरी ने आर्यिका दीक्षा क्यों ली थी ?",
-                        answer: "अगले भव में स्त्री पर्याय को समाप्त करने हेतु तथा परम्परा से मोक्ष प्राप्त करने की इच्छा से तीव्र वैराग्य भाव धारण कर उन कन्याओं ने आर्यिका दीक्षा ग्रहण की थी। आगम में कहीं ऐसा वर्णन नहीं आता है कि उनके पिता को उनके सास-ससुर के समक्ष सिर झुकाना पड़ता, इसलिए उन कन्याओं ने दीक्षा ले ली थी। तीर्थंकर तो जन्म से लेकर दीक्षा ग्रहण करने तक कभी भी सिद्धों के अतिरिक्त किसी मुनि को, माता-पिता आदि को भी नमस्कार नहीं करते हैं।"
-                        }
-                ];
-                questions = sampleData;
-                // Save sample data to localStorage
-                localStorage.setItem('jainismQA', JSON.stringify(questions));
-            }
-        }
 
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('jainismQA', JSON.stringify(questions));
-            console.log('Data saved to localStorage:', questions.length, 'questions');
-        }
+                database = firebase.database();
+                console.log("Database initialized:", database);
+                questionsRef = database.ref('questions');
 
-        // Export data to JSON format (for backup)
-        function exportData() {
-            const dataStr = JSON.stringify({
-                questions: questions,
-                exportDate: new Date().toISOString(),
-                totalQuestions: questions.length
-            }, null, 2);
-            
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'jainism_questions_backup.json';
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            showNotification('डेटा एक्सपोर्ट किया गया!', 'success');
-        }
+                // Listen for connection status
+                const connectedRef = database.ref('.info/connected');
+                connectedRef.on('value', (snapshot) => {
+                    isConnected = snapshot.val() === true;
+                    updateSyncStatus();
+                    console.log('Firebase connection status:', isConnected);
+                });
 
-        // Import data from JSON file
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+                // Listen for data changes with error handling
+                questionsRef.on('value', (snapshot) => {
+                    try {
+                        const data = snapshot.val();
+                        console.log("📥 Firebase snapshot data:", data);
+
+                        questions = data
+                            ? Object.entries(data).map(([key, value]) => ({ ...value, id: key }))
+                            : [];
+
+                        displayQuestions();
+                        updateStats();
+                        console.log('✅ Questions loaded:', questions.length);
+                    } catch (error) {
+                        console.error('❌ Error processing questions data:', error);
+                        loadLocalData();
+                    }
+                }, (error) => {
+                    console.error('❌ Error listening to questions:', error);
+                    loadLocalData();
+                });
+
+                // Simplified user tracking (without complex operations)
+                try {
+                    const usersRef = database.ref('users');
+                    const userSessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+                    // Simple user presence without complex operations
+                    const userRef = usersRef.child(userSessionId);
+
+                    // Set user with simple data
+                    userRef.set(true).catch((error) => {
+                        console.warn('User tracking disabled due to error:', error);
+                        document.getElementById('onlineUsers').textContent = '1';
+                    });
+
+                    // Remove user on disconnect
+                    userRef.onDisconnect().remove().catch((error) => {
+                        console.warn('Disconnect handler error:', error);
+                    });
+
+                    // Count online users with error handling
+                    usersRef.on('value', (snapshot) => {
                         try {
-                            const data = JSON.parse(e.target.result);
-                            if (data.questions && Array.isArray(data.questions)) {
-                                questions = data.questions;
-                                saveData();
-                                displayQuestions();
-                                updateStats();
-                                showNotification(`${questions.length} प्रश्न इम्पोर्ट किए गए!`, 'success');
-                            } else {
-                                showNotification('Invalid JSON format!', 'error');
-                            }
+                            const users = snapshot.val();
+                            const userCount = users ? Object.keys(users).length : 1;
+                            document.getElementById('onlineUsers').textContent = userCount;
                         } catch (error) {
-                            showNotification('JSON file में त्रुटि!', 'error');
+                            console.warn('Error counting users:', error);
+                            document.getElementById('onlineUsers').textContent = '1';
                         }
-                    };
-                    reader.readAsText(file);
+                    });
+
+                } catch (userError) {
+                    console.warn('User tracking failed, continuing without it:', userError);
+                    document.getElementById('onlineUsers').textContent = '1';
                 }
-            };
-            input.click();
+
+                // Reset attempts on successful initialization
+                initializationAttempts = 0;
+
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+
+                if (initializationAttempts < maxInitializationAttempts) {
+                    console.log(`Retrying Firebase initialization... Attempt ${initializationAttempts}/${maxInitializationAttempts}`);
+                    setTimeout(() => {
+                        initializeFirebase();
+                    }, 2000 * initializationAttempts); // Exponential backoff
+                } else {
+                    console.log('Max initialization attempts reached. Falling back to localStorage.');
+                    updateSyncStatus('error');
+                    loadLocalData();
+                }
+            }
         }
 
-        // Add or update question
-        function addQuestion() {
-            const questionInput = document.getElementById('questionInput');
-            const answerInput = document.getElementById('answerInput');
-            
-            const question = questionInput.value.trim();
-            const answer = answerInput.value.trim();
-            
-            if (!question || !answer) {
-                showNotification('कृपया प्रश्न और उत्तर दोनों भरें!', 'error');
-                return;
-            }
-            
-            // Check for duplicates (case-insensitive)
-            const isDuplicate = questions.some((q, index) => 
-                index !== currentEditIndex && 
-                q.question.toLowerCase() === question.toLowerCase()
-            );
-            
-            if (isDuplicate) {
-                showNotification('यह प्रश्न पहले से मौजूद है!', 'error');
-                return;
-            }
-            
-            if (currentEditIndex >= 0) {
-                // Update existing question
-                questions[currentEditIndex] = { question, answer };
-                currentEditIndex = -1;
-                showNotification('प्रश्न अपडेट किया गया!', 'success');
+        // Load local data as fallback
+        function loadLocalData() {
+            const localData = localStorage.getItem('jainismQA');
+            if (localData) {
+                try {
+                    questions = JSON.parse(localData);
+                } catch (e) {
+                    console.error('Error parsing local data:', e);
+                    questions = getDefaultQuestions();
+                }
             } else {
-                // Add new question
-                questions.push({ question, answer });
-                showNotification('प्रश्न जोड़ा गया!', 'success');
+                questions = getDefaultQuestions();
             }
-            
-            questionInput.value = '';
-            answerInput.value = '';
-            saveData();
             displayQuestions();
             updateStats();
         }
 
-        // Delete question
-        function deleteQuestion(index) {
-            if (confirm('क्या आप वाकई इस प्रश्न को हटाना चाहते हैं?')) {
-                questions.splice(index, 1);
-                saveData();
+        // Get default questions
+        function getDefaultQuestions() {
+            return [
+                {
+                    question: "णमोकार मंत्र को किसने बनाया ?",
+                    answer: "णमोकार मंत्र अनादिनिधन मंत्र है, इसे किसी ने नहीं बनाया है।",
+                    id: "default_" + Date.now(),
+                    timestamp: Date.now()
+                }
+            ];
+        }
+
+        // Update sync status
+        function updateSyncStatus(status = null) {
+            const syncStatus = document.getElementById('syncStatus');
+            const addBtn = document.getElementById('addBtn');
+
+            if (status === 'error') {
+                syncStatus.textContent = '❌ ऑफलाइन मोड';
+                syncStatus.className = 'sync-status disconnected';
+                addBtn.disabled = false;
+            } else if (isConnected) {
+                syncStatus.textContent = '✅ लाइव सिंक';
+                syncStatus.className = 'sync-status connected';
+                addBtn.disabled = false;
+            } else {
+                syncStatus.textContent = '🔄 कनेक्ट हो रहा है...';
+                syncStatus.className = 'sync-status syncing';
+                addBtn.disabled = true;
+            }
+        }
+
+        // Add or update question
+        async function addQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const answerInput = document.getElementById('answerInput');
+
+            const question = questionInput.value.trim();
+            const answer = answerInput.value.trim();
+
+            if (!question || !answer) {
+                showNotification('कृपया प्रश्न और उत्तर दोनों भरें!', 'error');
+                return;
+            }
+
+            const isDuplicate = questions.some((q, index) =>
+                index !== currentEditIndex &&
+                q.question.toLowerCase() === question.toLowerCase()
+            );
+
+            if (isDuplicate) {
+                showNotification('यह प्रश्न पहले से मौजूद है!', 'error');
+                return;
+            }
+
+            const questionData = {
+                question: question,
+                answer: answer,
+                timestamp: Date.now(),
+                id: currentEditIndex >= 0
+                    ? questions[currentEditIndex].id
+                    : String(Date.now()) + "_" + Math.floor(Math.random() * 100000)
+            };
+
+            try {
+                if (!database) {
+                    console.error("Database is not initialized!");
+                    showNotification('Firebase database not initialized!', 'error');
+                    return;
+                }
+                if (database && isConnected) {
+                    const path = `questions/${questionData.id}`;
+                    console.log("Writing to path:", path, questionData);
+                    const savePromise = database.ref(path).set(questionData)
+                        .then(() => {
+                            console.log("✅ Successfully wrote question to Firebase");
+                        })
+                        .catch((err) => {
+                            console.error("❌ Firebase write error:", err);
+                        });
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Firebase save timeout")), 10000)
+                    );
+
+                    await Promise.race([savePromise, timeoutPromise]);
+                    console.log("✅ Successfully wrote question to Firebase");
+
+                    showNotification(currentEditIndex >= 0 ? 'प्रश्न अपडेट किया गया!' : 'प्रश्न जोड़ा गया!', 'success');
+                } else {
+                    // Fallback to local storage
+                    if (currentEditIndex >= 0) {
+                        questions[currentEditIndex] = questionData;
+                    } else {
+                        questions.push(questionData);
+                    }
+                    localStorage.setItem('jainismQA', JSON.stringify(questions));
+                    displayQuestions();
+                    updateStats();
+                    showNotification('प्रश्न ऑफलाइन सेव किया गया!', 'success');
+                }
+
+                questionInput.value = '';
+                answerInput.value = '';
+                currentEditIndex = -1;
+
+            } catch (error) {
+                console.error('❌ Error adding question:', error);
+
+                // Fallback to local storage on Firebase error
+                if (currentEditIndex >= 0) {
+                    questions[currentEditIndex] = questionData;
+                } else {
+                    questions.push(questionData);
+                }
+                localStorage.setItem('jainismQA', JSON.stringify(questions));
                 displayQuestions();
                 updateStats();
-                showNotification('प्रश्न हटाया गया!', 'success');
+                showNotification('प्रश्न लोकल रूप से सेव किया गया!', 'success');
+            }
+        }
+
+
+        // Delete question
+        async function deleteQuestion(id) {
+            if (confirm('क्या आप वाकई इस प्रश्न को हटाना चाहते हैं?')) {
+                try {
+                    if (database && isConnected) {
+                        await questionsRef.child(id).remove();
+                        showNotification('प्रश्न हटाया गया!', 'success');
+                    } else {
+                        questions = questions.filter(q => q.id !== id);
+                        localStorage.setItem('jainismQA', JSON.stringify(questions));
+                        displayQuestions();
+                        updateStats();
+                        showNotification('प्रश्न ऑफलाइन हटाया गया!', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error deleting question:', error);
+                    showNotification('प्रश्न हटाने में त्रुटि!', 'error');
+                }
             }
         }
 
         // Edit question
-        function editQuestion(index) {
-            const question = questions[index];
-            document.getElementById('questionInput').value = question.question;
-            document.getElementById('answerInput').value = question.answer;
-            currentEditIndex = index;
-            showNotification('प्रश्न संपादन के लिए तैयार है!', 'success');
+        function editQuestion(id) {
+            const question = questions.find(q => q.id === id);
+            if (question) {
+                document.getElementById('questionInput').value = question.question;
+                document.getElementById('answerInput').value = question.answer;
+                currentEditIndex = questions.findIndex(q => q.id === id);
+                showNotification('प्रश्न संपादन के लिए तैयार है!', 'success');
+            }
         }
 
         // Search questions
@@ -538,10 +674,10 @@
             if (!query.trim()) {
                 return questions;
             }
-            
+
             const searchTerm = query.toLowerCase();
-            return questions.filter(q => 
-                q.question.toLowerCase().includes(searchTerm) || 
+            return questions.filter(q =>
+                q.question.toLowerCase().includes(searchTerm) ||
                 q.answer.toLowerCase().includes(searchTerm)
             );
         }
@@ -549,7 +685,7 @@
         // Highlight search terms
         function highlightText(text, query) {
             if (!query.trim()) return text;
-            
+
             const regex = new RegExp(`(${query})`, 'gi');
             return text.replace(regex, '<span class="highlight">$1</span>');
         }
@@ -558,15 +694,15 @@
         function displayQuestions(filteredQuestions = null) {
             const container = document.getElementById('qaContainer');
             const questionsToShow = filteredQuestions || questions;
-            
+
             if (questionsToShow.length === 0) {
                 container.innerHTML = '<div class="no-results">कोई प्रश्न नहीं मिला।</div>';
                 return;
             }
-            
+
             const searchQuery = document.getElementById('searchInput').value;
-            
-            container.innerHTML = questionsToShow.map((q, index) => `
+
+            container.innerHTML = questionsToShow.map((q) => `
                 <div class="qa-item">
                     <div class="question">
                         प्रश्न: ${highlightText(q.question, searchQuery)}
@@ -575,10 +711,10 @@
                         उत्तर: ${highlightText(q.answer, searchQuery)}
                     </div>
                     <div class="qa-actions">
-                        <button class="btn btn-small btn-edit" onclick="editQuestion(${questions.indexOf(q)})">
+                        <button class="btn btn-small btn-edit" onclick="editQuestion('${q.id}')">
                             संपादित करें
                         </button>
-                        <button class="btn btn-small btn-danger" onclick="deleteQuestion(${questions.indexOf(q)})">
+                        <button class="btn btn-small btn-danger" onclick="deleteQuestion('${q.id}')">
                             हटाएं
                         </button>
                     </div>
@@ -589,8 +725,8 @@
         // Update statistics
         function updateStats() {
             document.getElementById('totalQuestions').textContent = questions.length;
-            const searchResults = document.getElementById('searchInput').value ? 
-                searchQuestions(document.getElementById('searchInput').value).length : 
+            const searchResults = document.getElementById('searchInput').value ?
+                searchQuestions(document.getElementById('searchInput').value).length :
                 questions.length;
             document.getElementById('searchResults').textContent = searchResults;
         }
@@ -601,7 +737,7 @@
             notification.className = `notification ${type}`;
             notification.textContent = message;
             document.body.appendChild(notification);
-            
+
             setTimeout(() => notification.classList.add('show'), 100);
             setTimeout(() => {
                 notification.classList.remove('show');
@@ -609,28 +745,26 @@
             }, 3000);
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async function() {
-            await loadData();
-            displayQuestions();
-            updateStats();
-            
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeFirebase();
+
             // Search functionality
             const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 const results = searchQuestions(this.value);
                 displayQuestions(results);
                 updateStats();
             });
-            
-            // Enter key support for adding questions
-            document.getElementById('questionInput').addEventListener('keypress', function(e) {
+
+            // Enter key support
+            document.getElementById('questionInput').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
                     document.getElementById('answerInput').focus();
                 }
             });
-            
-            document.getElementById('answerInput').addEventListener('keypress', function(e) {
+
+            document.getElementById('answerInput').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter' && e.ctrlKey) {
                     addQuestion();
                 }
@@ -638,4 +772,5 @@
         });
     </script>
 </body>
+
 </html>
