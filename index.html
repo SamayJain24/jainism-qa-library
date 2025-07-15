@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>जैन धर्म प्रश्न-उत्तर संग्रह</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-section {
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+            background: white;
+        }
+
+        .add-section {
+            display: grid;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .qa-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .qa-item {
+            border: 2px solid #e8f4f8;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transition: all 0.3s ease;
+        }
+
+        .qa-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .question {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .answer {
+            color: #34495e;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .qa-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            border-radius: 20px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.success {
+            background: #27ae60;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .controls {
+                padding: 20px;
+            }
+
+            .add-section {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .qa-actions {
+                flex-direction: column;
+            }
+
+            .qa-container {
+                max-height: 500px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                padding: 15px;
+            }
+
+            .qa-item {
+                padding: 15px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕉️ जैन धर्म प्रश्न-उत्तर संग्रह</h1>
+            <p>आपका व्यक्तिगत प्रतियोगिता पुस्तकालय</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalQuestions">0</div>
+                <div class="stat-label">कुल प्रश्न</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="searchResults">0</div>
+                <div class="stat-label">खोज परिणाम</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-section">
+                <input type="text" class="search-box" id="searchInput" placeholder="प्रश्न या उत्तर में खोजें...">
+            </div>
+
+            <div class="add-section">
+                <div class="form-group">
+                    <label for="questionInput">प्रश्न:</label>
+                    <input type="text" id="questionInput" placeholder="प्रश्न यहाँ लिखें...">
+                </div>
+                <div class="form-group">
+                    <label for="answerInput">उत्तर:</label>
+                    <textarea id="answerInput" placeholder="उत्तर यहाँ लिखें..."></textarea>
+                </div>
+                <button class="btn" onclick="addQuestion()">प्रश्न जोड़ें</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                    <button class="btn" onclick="exportData()">डेटा एक्सपोर्ट करें</button>
+                    <button class="btn" onclick="importData()">डेटा इम्पोर्ट करें</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-container" id="qaContainer">
+            <div class="no-results">
+                कोई प्रश्न उपलब्ध नहीं है। कृपया नए प्रश्न जोड़ें।
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store questions in memory
+        let questions = [];
+        let currentEditIndex = -1;
+
+        // Load data from JSON file or localStorage
+        async function loadData() {
+            try {
+                // First try to load from localStorage (browser storage)
+                const localData = localStorage.getItem('jainismQA');
+                if (localData) {
+                    questions = JSON.parse(localData);
+                    console.log('Loaded from localStorage:', questions.length, 'questions');
+                    return;
+                }
+                
+                // If no localStorage, try to load from JSON file
+                const response = await fetch('data/questions.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    questions = data.questions || [];
+                    console.log('Loaded from JSON file:', questions.length, 'questions');
+                    // Save to localStorage for future use
+                    localStorage.setItem('jainismQA', JSON.stringify(questions));
+                } else {
+                    throw new Error('JSON file not found');
+                }
+            } catch (error) {
+                console.log('Using sample data:', error.message);
+                // Fallback to sample data
+                const sampleData = [
+                    {
+                        question: "णमोकार मंत्र को किसने बनाया ?",
+                        answer: "णमोकार मंत्र अनादिनिधन मंत्र है, इसे किसी ने नहीं बनाया है।"
+                    },
+                    {
+                        question: "णमोकार मंत्र में किनको नमस्कार किया गया है ?",
+                        answer: "पाँच परमेष्ठियों-अरिहंत, सिद्ध, आचार्य, उपाध्याय और साधु को नमस्कार किया गया है।"
+                    },
+                    {
+                        question: "उनकी पुत्री ब्राह्मी-सुन्दरी ने आर्यिका दीक्षा क्यों ली थी ?",
+                        answer: "अगले भव में स्त्री पर्याय को समाप्त करने हेतु तथा परम्परा से मोक्ष प्राप्त करने की इच्छा से तीव्र वैराग्य भाव धारण कर उन कन्याओं ने आर्यिका दीक्षा ग्रहण की थी। आगम में कहीं ऐसा वर्णन नहीं आता है कि उनके पिता को उनके सास-ससुर के समक्ष सिर झुकाना पड़ता, इसलिए उन कन्याओं ने दीक्षा ले ली थी। तीर्थंकर तो जन्म से लेकर दीक्षा ग्रहण करने तक कभी भी सिद्धों के अतिरिक्त किसी मुनि को, माता-पिता आदि को भी नमस्कार नहीं करते हैं।"
+                        }
+                ];
+                questions = sampleData;
+                // Save sample data to localStorage
+                localStorage.setItem('jainismQA', JSON.stringify(questions));
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('jainismQA', JSON.stringify(questions));
+            console.log('Data saved to localStorage:', questions.length, 'questions');
+        }
+
+        // Export data to JSON format (for backup)
+        function exportData() {
+            const dataStr = JSON.stringify({
+                questions: questions,
+                exportDate: new Date().toISOString(),
+                totalQuestions: questions.length
+            }, null, 2);
+            
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'jainism_questions_backup.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('डेटा एक्सपोर्ट किया गया!', 'success');
+        }
+
+        // Import data from JSON file
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.questions && Array.isArray(data.questions)) {
+                                questions = data.questions;
+                                saveData();
+                                displayQuestions();
+                                updateStats();
+                                showNotification(`${questions.length} प्रश्न इम्पोर्ट किए गए!`, 'success');
+                            } else {
+                                showNotification('Invalid JSON format!', 'error');
+                            }
+                        } catch (error) {
+                            showNotification('JSON file में त्रुटि!', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Add or update question
+        function addQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const answerInput = document.getElementById('answerInput');
+            
+            const question = questionInput.value.trim();
+            const answer = answerInput.value.trim();
+            
+            if (!question || !answer) {
+                showNotification('कृपया प्रश्न और उत्तर दोनों भरें!', 'error');
+                return;
+            }
+            
+            // Check for duplicates (case-insensitive)
+            const isDuplicate = questions.some((q, index) => 
+                index !== currentEditIndex && 
+                q.question.toLowerCase() === question.toLowerCase()
+            );
+            
+            if (isDuplicate) {
+                showNotification('यह प्रश्न पहले से मौजूद है!', 'error');
+                return;
+            }
+            
+            if (currentEditIndex >= 0) {
+                // Update existing question
+                questions[currentEditIndex] = { question, answer };
+                currentEditIndex = -1;
+                showNotification('प्रश्न अपडेट किया गया!', 'success');
+            } else {
+                // Add new question
+                questions.push({ question, answer });
+                showNotification('प्रश्न जोड़ा गया!', 'success');
+            }
+            
+            questionInput.value = '';
+            answerInput.value = '';
+            saveData();
+            displayQuestions();
+            updateStats();
+        }
+
+        // Delete question
+        function deleteQuestion(index) {
+            if (confirm('क्या आप वाकई इस प्रश्न को हटाना चाहते हैं?')) {
+                questions.splice(index, 1);
+                saveData();
+                displayQuestions();
+                updateStats();
+                showNotification('प्रश्न हटाया गया!', 'success');
+            }
+        }
+
+        // Edit question
+        function editQuestion(index) {
+            const question = questions[index];
+            document.getElementById('questionInput').value = question.question;
+            document.getElementById('answerInput').value = question.answer;
+            currentEditIndex = index;
+            showNotification('प्रश्न संपादन के लिए तैयार है!', 'success');
+        }
+
+        // Search questions
+        function searchQuestions(query) {
+            if (!query.trim()) {
+                return questions;
+            }
+            
+            const searchTerm = query.toLowerCase();
+            return questions.filter(q => 
+                q.question.toLowerCase().includes(searchTerm) || 
+                q.answer.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Highlight search terms
+        function highlightText(text, query) {
+            if (!query.trim()) return text;
+            
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // Display questions
+        function displayQuestions(filteredQuestions = null) {
+            const container = document.getElementById('qaContainer');
+            const questionsToShow = filteredQuestions || questions;
+            
+            if (questionsToShow.length === 0) {
+                container.innerHTML = '<div class="no-results">कोई प्रश्न नहीं मिला।</div>';
+                return;
+            }
+            
+            const searchQuery = document.getElementById('searchInput').value;
+            
+            container.innerHTML = questionsToShow.map((q, index) => `
+                <div class="qa-item">
+                    <div class="question">
+                        प्रश्न: ${highlightText(q.question, searchQuery)}
+                    </div>
+                    <div class="answer">
+                        उत्तर: ${highlightText(q.answer, searchQuery)}
+                    </div>
+                    <div class="qa-actions">
+                        <button class="btn btn-small btn-edit" onclick="editQuestion(${questions.indexOf(q)})">
+                            संपादित करें
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deleteQuestion(${questions.indexOf(q)})">
+                            हटाएं
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalQuestions').textContent = questions.length;
+            const searchResults = document.getElementById('searchInput').value ? 
+                searchQuestions(document.getElementById('searchInput').value).length : 
+                questions.length;
+            document.getElementById('searchResults').textContent = searchResults;
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadData();
+            displayQuestions();
+            updateStats();
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function() {
+                const results = searchQuestions(this.value);
+                displayQuestions(results);
+                updateStats();
+            });
+            
+            // Enter key support for adding questions
+            document.getElementById('questionInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('answerInput').focus();
+                }
+            });
+            
+            document.getElementById('answerInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    addQuestion();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
